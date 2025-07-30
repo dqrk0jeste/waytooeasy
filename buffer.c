@@ -6,11 +6,14 @@
 #include <unistd.h>
 #include <wayland-client-protocol.h>
 
+#include "ints.h"
+#include "macros.h"
+
 static void
 buffer_handle_release(void *data, struct wl_buffer *wl_buffer) {
-    struct buffer *buffer = data;
-    wl_buffer_destroy(wl_buffer);
+    unused(wl_buffer);
 
+    struct buffer *buffer = data;
     buffer_destroy(buffer);
 }
 
@@ -19,13 +22,13 @@ static const struct wl_buffer_listener wl_buffer_listener = {
 };
 
 struct buffer *
-buffer_create(struct memory_pool *pool, int width, int height) {
+buffer_create(struct memory_pool *pool, i32 width, i32 height) {
     struct buffer *buffer = calloc(1, sizeof(*buffer));
     buffer->width = width;
     buffer->height = height;
 
-    int stride = width * 4;
-    int size = stride * height;
+    i32 stride = width * 4;
+    i32 size = stride * height;
     buffer->mem = memory_pool_get_chunk(pool, size);
 
     buffer->wl_buffer =
@@ -39,5 +42,6 @@ buffer_create(struct memory_pool *pool, int width, int height) {
 void
 buffer_destroy(struct buffer *buffer) {
     memory_chunk_put(buffer->mem);
+    wl_buffer_destroy(buffer->wl_buffer);
     free(buffer);
 }

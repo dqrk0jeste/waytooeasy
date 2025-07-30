@@ -11,7 +11,7 @@
 #include "wayland.h"
 
 static void
-keyboard_handle_keymap(void *data, struct wl_keyboard *keyboard, uint format, int fd, uint size) {
+keyboard_handle_keymap(void *data, struct wl_keyboard *keyboard, u32 format, int fd, u32 size) {
     unused(keyboard);
 
     struct wayland *wayland = data;
@@ -63,34 +63,35 @@ error_fd:
 }
 
 static void
-keyboard_handle_enter(void *data, struct wl_keyboard *wl_keyboard, uint serial, struct wl_surface *surface,
+keyboard_handle_enter(void *data, struct wl_keyboard *wl_keyboard, u32 serial, struct wl_surface *surface,
         struct wl_array *keys) {
     unused(data), unused(wl_keyboard), unused(serial), unused(surface), unused(keys);
 }
 
 static void
-keyboard_handle_leave(void *data, struct wl_keyboard *wl_keyboard, uint serial, struct wl_surface *surface) {
+keyboard_handle_leave(void *data, struct wl_keyboard *wl_keyboard, u32 serial, struct wl_surface *surface) {
     unused(data), unused(wl_keyboard), unused(serial), unused(surface);
 }
 
 static void
-keyboard_handle_key(void *data, struct wl_keyboard *keyboard, uint serial, uint time, uint key, uint state) {
+keyboard_handle_key(void *data, struct wl_keyboard *keyboard, u32 serial, u32 time, u32 key, u32 state) {
     unused(keyboard), unused(serial), unused(time);
 
     struct wayland *wayland = data;
 
     char buffer[8] = {0};
     if(wayland->xkb_state != NULL) {
-        uint keycode = key + 8;
+        u32 keycode = key + 8;
         xkb_state_key_get_utf8(wayland->xkb_state, keycode, buffer, sizeof(buffer));
     }
 
-    wayland->impl.key((struct key){key, buffer, state}, time);
+    if(wayland->impl.key != NULL)
+        wayland->impl.key(key, buffer, state, time);
 }
 
 static void
-keyboard_handle_modifiers(void *data, struct wl_keyboard *keyboard, uint serial, uint mods_depressed, uint mods_latched,
-        uint mods_locked, uint group) {
+keyboard_handle_modifiers(void *data, struct wl_keyboard *keyboard, u32 serial, u32 mods_depressed, u32 mods_latched,
+        u32 mods_locked, u32 group) {
     unused(keyboard), unused(serial);
 
     struct wayland *wayland = data;

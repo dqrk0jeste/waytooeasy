@@ -3,9 +3,8 @@
 
 #include <stdbool.h>
 
-#include "ints.h"
-
 struct app {
+    struct event_loop *event_loop;
     float phase;
 };
 

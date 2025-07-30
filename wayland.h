@@ -7,6 +7,7 @@
 #include "ints.h"
 #include "keyboard.h"
 #include "list.h"
+#include "pointer.h"
 
 #ifndef DEFAULT_WIDTH
 #define DEFAULT_WIDTH 1024
@@ -17,12 +18,16 @@
 #endif
 
 struct wayland_impl {
-    void (*frame)(struct buffer *buffer, float dt);
-    void (*key)(struct key key, uint time);
+    void (*close)(void);
+    void (*frame)(struct buffer *buffer, u32 time);
+    void (*key)(u32 raw, char *utf8, enum wl_keyboard_key_state state, u32 time);
+    void (*motion)(float x, float y, u32 time);
+    void (*relative_motion)(float x, float y, u32 time);
+    void (*click)(u32 button, enum wl_pointer_button_state state, u32 time);
 };
 
-struct state {
-    int width, height;
+struct surface_state {
+    i32 width, height;
 };
 
 struct wayland {
@@ -48,12 +53,10 @@ struct wayland {
     struct wl_surface *surface;
     struct xdg_surface *xdg_surface;
     struct xdg_toplevel *toplevel;
+    struct surface_state surface_current, surface_pending;
 
     struct memory_pool *memory_pool;
-
     struct buffer *buffer;
-
-    struct state current, pending;
 };
 
 struct wayland *

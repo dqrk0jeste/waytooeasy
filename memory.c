@@ -158,7 +158,7 @@ void
 memory_pool_destroy(struct memory_pool *pool) {
     // destroy the cached memory chunks
     list_for_each_safe(iter, &pool->chunks) {
-        struct memory_chunk *chunk = wl_container_of(iter, chunk, link);
+        struct memory_chunk *chunk = container_of(iter, chunk, link);
         memory_chunk_destroy(chunk);
     }
 

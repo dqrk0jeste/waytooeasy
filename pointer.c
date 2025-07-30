@@ -1,12 +1,10 @@
 #include "pointer.h"
 
-#include <stdio.h>
-
 #include "macros.h"
 #include "wayland.h"
 
 static void
-handle_enter(void *data, struct wl_pointer *pointer, uint serial, struct wl_surface *surface, wl_fixed_t x,
+handle_enter(void *data, struct wl_pointer *pointer, u32 serial, struct wl_surface *surface, wl_fixed_t x,
         wl_fixed_t y) {
     unused(pointer), unused(serial), unused(surface);
 
@@ -17,29 +15,41 @@ handle_enter(void *data, struct wl_pointer *pointer, uint serial, struct wl_surf
 }
 
 static void
-handle_leave(void *data, struct wl_pointer *pointer, uint serial, struct wl_surface *surface) {
+handle_leave(void *data, struct wl_pointer *pointer, u32 serial, struct wl_surface *surface) {
     unused(data), unused(pointer), unused(serial), unused(surface);
 }
 
 static void
-handle_motion(void *data, struct wl_pointer *pointer, uint time, wl_fixed_t x, wl_fixed_t y) {
-    unused(data), unused(pointer), unused(time);
+handle_motion(void *data, struct wl_pointer *pointer, u32 time, wl_fixed_t x, wl_fixed_t y) {
+    unused(pointer);
 
     struct wayland *wayland = data;
+
+    float last_x = wayland->pointer_x;
+    float last_y = wayland->pointer_y;
 
     wayland->pointer_x = wl_fixed_to_double(x);
     wayland->pointer_y = wl_fixed_to_double(y);
 
-    printf("%f, %f\n", wayland->pointer_x, wayland->pointer_y);
+    if(wayland->impl.motion != NULL)
+        wayland->impl.motion(wayland->pointer_x, wayland->pointer_y, time);
+
+    if(wayland->impl.relative_motion != NULL)
+        wayland->impl.relative_motion(wayland->pointer_x - last_x, wayland->pointer_y - last_y, time);
 }
 
 static void
-handle_button(void *data, struct wl_pointer *pointer, uint serial, uint time, uint button, uint state) {
-    // unused(data), unused(pointer), unused(time), unused(x), unused(y);
+handle_button(void *data, struct wl_pointer *pointer, u32 serial, u32 time, u32 button, u32 state) {
+    unused(pointer), unused(serial);
+
+    struct wayland *wayland = data;
+
+    if(wayland->impl.click != NULL)
+        wayland->impl.click(button, state, time);
 }
 
 static void
-handle_axis(void *data, struct wl_pointer *pointer, uint time, uint axis, wl_fixed_t value) {
+handle_axis(void *data, struct wl_pointer *pointer, u32 time, u32 axis, wl_fixed_t value) {
     unused(data), unused(pointer), unused(time), unused(axis), unused(value);
 }
 
@@ -49,27 +59,27 @@ handle_frame(void *data, struct wl_pointer *pointer) {
 }
 
 static void
-handle_axis_source(void *data, struct wl_pointer *pointer, uint axis_source) {
+handle_axis_source(void *data, struct wl_pointer *pointer, u32 axis_source) {
     unused(data), unused(pointer), unused(axis_source);
 }
 
 static void
-handle_axis_stop(void *data, struct wl_pointer *pointer, uint time, uint axis) {
+handle_axis_stop(void *data, struct wl_pointer *pointer, u32 time, u32 axis) {
     unused(data), unused(pointer), unused(time), unused(axis);
 }
 
 static void
-handle_axis_discrete(void *data, struct wl_pointer *pointer, uint axis, int discrete) {
+handle_axis_discrete(void *data, struct wl_pointer *pointer, u32 axis, i32 discrete) {
     unused(data), unused(pointer), unused(axis), unused(discrete);
 }
 
 static void
-handle_axis_value120(void *data, struct wl_pointer *pointer, uint axis, int value120) {
+handle_axis_value120(void *data, struct wl_pointer *pointer, u32 axis, i32 value120) {
     unused(data), unused(pointer), unused(axis), unused(value120);
 }
 
 static void
-handle_axis_relative_direction(void *data, struct wl_pointer *pointer, uint axis, uint direction) {
+handle_axis_relative_direction(void *data, struct wl_pointer *pointer, u32 axis, u32 direction) {
     unused(data), unused(pointer), unused(axis), unused(direction);
 }
 
