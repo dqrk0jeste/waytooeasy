@@ -71,6 +71,7 @@ ctx.add_source(
         "wayland.c",
         "keyboard.c",
         "pointer.c",
+        "helpers.c",
     ]
 )
 

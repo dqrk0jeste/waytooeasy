@@ -85,8 +85,8 @@ keyboard_handle_key(void *data, struct wl_keyboard *keyboard, u32 serial, u32 ti
         xkb_state_key_get_utf8(wayland->xkb_state, keycode, buffer, sizeof(buffer));
     }
 
-    if(wayland->impl.key != NULL)
-        wayland->impl.key(key, buffer, state, time);
+    if(wayland->impl->key != NULL)
+        wayland->impl->key(wayland->data, key, buffer, state);
 }
 
 static void

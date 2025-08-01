@@ -6,6 +6,8 @@
 struct app {
     struct event_loop *event_loop;
     float phase;
+
+    struct timer *timer;
 };
 
 // piece of global state

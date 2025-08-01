@@ -21,31 +21,25 @@ handle_leave(void *data, struct wl_pointer *pointer, u32 serial, struct wl_surfa
 
 static void
 handle_motion(void *data, struct wl_pointer *pointer, u32 time, wl_fixed_t x, wl_fixed_t y) {
-    unused(pointer);
+    unused(pointer), unused(time);
 
     struct wayland *wayland = data;
-
-    float last_x = wayland->pointer_x;
-    float last_y = wayland->pointer_y;
 
     wayland->pointer_x = wl_fixed_to_double(x);
     wayland->pointer_y = wl_fixed_to_double(y);
 
-    if(wayland->impl.motion != NULL)
-        wayland->impl.motion(wayland->pointer_x, wayland->pointer_y, time);
-
-    if(wayland->impl.relative_motion != NULL)
-        wayland->impl.relative_motion(wayland->pointer_x - last_x, wayland->pointer_y - last_y, time);
+    if(wayland->impl->motion != NULL)
+        wayland->impl->motion(wayland->data, wayland->pointer_x, wayland->pointer_y);
 }
 
 static void
 handle_button(void *data, struct wl_pointer *pointer, u32 serial, u32 time, u32 button, u32 state) {
-    unused(pointer), unused(serial);
+    unused(pointer), unused(serial), unused(time);
 
     struct wayland *wayland = data;
 
-    if(wayland->impl.click != NULL)
-        wayland->impl.click(button, state, time);
+    if(wayland->impl->click != NULL)
+        wayland->impl->click(wayland->data, button, state);
 }
 
 static void

@@ -40,13 +40,16 @@ struct timer {
 };
 
 struct event_loop *
-event_loop_create(struct wayland_impl impl);
+event_loop_create(void);
 
 void
 event_loop_start(struct event_loop *event_loop);
 
 void
 event_loop_stop_and_destroy(struct event_loop *event_loop);
+
+void
+event_loop_add_wayland(struct event_loop *event_loop, struct wayland_impl *impl, void *data);
 
 struct fd *
 event_loop_add_fd(struct event_loop *event_loop, i32 fd, fd_handler handler, void *data);

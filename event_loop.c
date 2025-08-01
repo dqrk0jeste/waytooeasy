@@ -7,6 +7,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "helpers.h"
 #include "list.h"
 #include "wayland.h"
 
@@ -28,14 +29,6 @@ event_loop_remove_fd(struct event_loop *event_loop, struct fd *fd) {
     // handle polling or something
 }
 
-static u32
-now_ms(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-
-    return ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
-}
-
 static void
 insert_sorted(list *timers, struct timer *this) {
     list_for_each(iter, timers) {
@@ -52,7 +45,7 @@ insert_sorted(list *timers, struct timer *this) {
 struct timer *
 event_loop_add_timer(struct event_loop *event_loop, u32 duration_ms, timer_handler handler, void *data) {
     struct timer *this = calloc(1, sizeof(*this));
-    this->ends_at = now_ms() + duration_ms;
+    this->ends_at = time_now_ms() + duration_ms;
     this->handler = handler;
     this->data = data;
 
@@ -68,9 +61,8 @@ event_loop_remove_timer(struct event_loop *event_loop, struct timer *timer) {
 }
 
 struct event_loop *
-event_loop_create(struct wayland_impl impl) {
+event_loop_create(void) {
     struct event_loop *loop = calloc(1, sizeof(*loop));
-    loop->wayland = wayland_create(loop, impl);
 
     return loop;
 }
@@ -84,11 +76,13 @@ event_loop_stop_and_destroy(struct event_loop *event_loop) {
 void
 event_loop_destroy(struct event_loop *event_loop) {
     list_for_each_safe(iter, &event_loop->fds) {
-        free(iter);
+        struct fd *fd = container_of(iter, fd, link);
+        free(fd);
     }
 
     list_for_each_safe(iter, &event_loop->timers) {
-        free(iter);
+        struct timer *timer = container_of(iter, timer, link);
+        free(timer);
     }
 
     wayland_destroy(event_loop->wayland);
@@ -96,7 +90,13 @@ event_loop_destroy(struct event_loop *event_loop) {
 }
 
 void
+event_loop_add_wayland(struct event_loop *event_loop, struct wayland_impl *impl, void *data) {
+    event_loop->wayland = wayland_create(impl, data);
+}
+
+void
 event_loop_start(struct event_loop *event_loop) {
+    assert(event_loop->wayland != NULL);
     event_loop->running = true;
 
     struct wl_display *display = event_loop->wayland->display;
@@ -107,7 +107,7 @@ event_loop_start(struct event_loop *event_loop) {
         i32 timeout = -1;
         if(event_loop->timers.len > 0) {
             struct timer *first = container_of(event_loop->timers.first, first, link);
-            if(first->ends_at <= now_ms()) {
+            if(first->ends_at <= time_now_ms()) {
                 first->handler(first->data);
 
                 event_loop_remove_timer(event_loop, first);
@@ -116,7 +116,7 @@ event_loop_start(struct event_loop *event_loop) {
             }
 
             // this means there is no expired timer now, so we can calculate the timeout for the poll
-            timeout = now_ms() - first->ends_at;
+            timeout = time_now_ms() - first->ends_at;
         }
 
         while(wl_display_prepare_read(display) != 0) {

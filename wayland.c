@@ -11,7 +11,7 @@
 #include <wayland-util.h>
 #include <xkbcommon/xkbcommon.h>
 
-#include "event_loop.h"
+#include "helpers.h"
 #include "keyboard.h"
 #include "macros.h"
 #include "pointer.h"
@@ -110,13 +110,13 @@ draw_frame(struct wayland *wayland) {
     wayland->buffer =
             buffer_create(wayland->memory_pool, wayland->surface_current.width, wayland->surface_current.height);
 
-    struct timespec start, end;
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    wayland->impl.frame(wayland->buffer, 0);
-    clock_gettime(CLOCK_MONOTONIC, &end);
+    wayland->impl->frame(wayland->data, wayland->buffer->mem->data, wayland->surface_current.width,
+            wayland->surface_current.height, time_delta_ms(&now, &wayland->last_frame));
 
-    // printf("frame: %u\n", timespec_to_ms(&end) - timespec_to_ms(&start));
+    wayland->last_frame = now;
 
     // request the new frame callback
     struct wl_callback *frame = wl_surface_frame(wayland->surface);
@@ -166,7 +166,7 @@ xdg_toplevel_handle_close(void *data, struct xdg_toplevel *toplevel) {
     unused(toplevel);
 
     struct wayland *wayland = data;
-    wayland->impl.close();
+    wayland->impl->close(data);
 }
 
 static void
@@ -182,10 +182,10 @@ static const struct xdg_toplevel_listener xdg_toplevel_listener = {
 };
 
 struct wayland *
-wayland_create(struct event_loop *event_loop, struct wayland_impl impl) {
+wayland_create(struct wayland_impl *impl, void *data) {
     struct wayland *wayland = calloc(1, sizeof(*wayland));
     wayland->impl = impl;
-    wayland->event_loop = event_loop;
+    wayland->data = data;
 
     wayland->display = wl_display_connect(NULL);
     assert(wayland->display != NULL && "couldn't connect to wayland server!\n");
@@ -229,9 +229,6 @@ wayland_destroy(struct wayland *wayland) {
     wl_registry_destroy(wayland->registry);
     wl_compositor_destroy(wayland->compositor);
     wl_seat_destroy(wayland->seat);
-
-    if(wayland->buffer != NULL)
-        buffer_destroy(wayland->buffer);
 
     wl_shm_destroy(wayland->memory_pool->shm);
     memory_pool_destroy(wayland->memory_pool);

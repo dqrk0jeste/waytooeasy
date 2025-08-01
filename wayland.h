@@ -2,6 +2,7 @@
 #define WAYLAND_H
 
 #include <stdbool.h>
+#include <time.h>
 
 #include "buffer.h"
 #include "ints.h"
@@ -18,12 +19,12 @@
 #endif
 
 struct wayland_impl {
-    void (*close)(void);
-    void (*frame)(struct buffer *buffer, u32 time);
-    void (*key)(u32 raw, char *utf8, enum wl_keyboard_key_state state, u32 time);
-    void (*motion)(float x, float y, u32 time);
-    void (*relative_motion)(float x, float y, u32 time);
-    void (*click)(u32 button, enum wl_pointer_button_state state, u32 time);
+    void (*close)(void *data);
+    void (*frame)(void *data, u32 *buffer, i32 width, i32 height, float dt);
+    void (*key)(void *data, u32 raw, char *utf8, enum wl_keyboard_key_state state);
+    void (*motion)(void *data, float x, float y);
+    void (*relative_motion)(void *data, float dx, float dy);
+    void (*click)(void *data, u32 button, enum wl_pointer_button_state state);
 };
 
 struct surface_state {
@@ -31,8 +32,8 @@ struct surface_state {
 };
 
 struct wayland {
-    struct wayland_impl impl;
-    struct event_loop *event_loop;
+    struct wayland_impl *impl;
+    void *data;
 
     struct wl_display *display;
     struct wl_registry *registry;
@@ -57,10 +58,11 @@ struct wayland {
 
     struct memory_pool *memory_pool;
     struct buffer *buffer;
+    struct timespec last_frame;
 };
 
 struct wayland *
-wayland_create(struct event_loop *event_loop, struct wayland_impl impl);
+wayland_create(struct wayland_impl *impl, void *data);
 
 void
 wayland_destroy(struct wayland *wayland);
